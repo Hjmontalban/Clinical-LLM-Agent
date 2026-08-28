@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import Settings, get_settings
 from app.core.exceptions import ResearchNotFoundError
-from app.db.session import ResearchRepository, async_session
+from app.db.session import ResearchRepository, init_db, get_session_factory
 from app.schemas.search import (
     HealthResponse,
     ResearchCreateRequest,
@@ -32,8 +32,10 @@ router = APIRouter()
 _rate_limits: dict[str, list[float]] = defaultdict(list)
 
 
-async def get_repo() -> ResearchRepository:
-    async with async_session() as session:
+async def get_repo():
+    await init_db()
+    session_factory = get_session_factory()
+    async with session_factory() as session:
         yield ResearchRepository(session)
 
 
@@ -109,8 +111,13 @@ async def create_research(
     repo: ResearchRepository = Depends(get_repo),
 ):
     check_rate_limit(request, settings)
-    research_id = await start_research(settings, repo, body.question)
-    return ResearchCreateResponse(research_id=research_id, status="processing")
+    try:
+        research_id = await start_research(settings, repo, body.question)
+        status = "completed" if settings.is_vercel else "processing"
+        return ResearchCreateResponse(research_id=research_id, status=status)
+    except Exception as e:
+        logger.exception("Failed to start research")
+        raise HTTPException(500, f"Research failed: {e}") from e
 
 
 @router.get("/research")

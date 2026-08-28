@@ -1,11 +1,14 @@
 import json
+import logging
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Float, Integer, String, Text, select
+from sqlalchemy import Column, DateTime, Integer, String, Text, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 class Base(DeclarativeBase):
@@ -42,14 +45,36 @@ class PaperRecord(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
-settings = get_settings()
-engine = create_async_engine(settings.database_url, echo=settings.debug)
-async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+_db_initialized = False
+engine = None
+async_session = None
+
+
+def _get_engine():
+    global engine, async_session
+    if engine is None:
+        settings = get_settings()
+        connect_args = {}
+        if settings.database_url.startswith("sqlite"):
+            connect_args["check_same_thread"] = False
+        engine = create_async_engine(
+            settings.database_url,
+            echo=settings.debug,
+            connect_args=connect_args,
+        )
+        async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    return engine
 
 
 async def init_db() -> None:
-    async with engine.begin() as conn:
+    global _db_initialized
+    if _db_initialized:
+        return
+    eng = _get_engine()
+    async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    _db_initialized = True
+    logger.info("Database initialized")
 
 
 class ResearchRepository:
@@ -110,3 +135,13 @@ class ResearchRepository:
 
     async def get_paper(self, paper_id: str) -> PaperRecord | None:
         return await self.session.get(PaperRecord, paper_id)
+
+
+async def get_db_session() -> AsyncSession:
+    factory = get_session_factory()
+    return factory()
+
+
+def get_session_factory():
+    _get_engine()
+    return async_session

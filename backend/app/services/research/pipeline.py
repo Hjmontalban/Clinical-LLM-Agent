@@ -98,11 +98,14 @@ class ResearchPipeline:
             source_status: dict[str, str] = {}
             all_papers = []
             queries = build_search_queries(question, plan.search_queries)
+            if self.settings.is_vercel:
+                queries = queries[:2]
 
             for q in queries:
-                pubmed_task = self._safe_search("pubmed", self.pubmed.search(q, self.settings.max_papers_per_search))
-                semantic_task = self._safe_search("semantic_scholar", self.semantic.search(q, self.settings.max_papers_per_search))
-                openalex_task = self._safe_search("openalex", self.openalex.search(q, self.settings.max_papers_per_search))
+                limit = min(15, self.settings.max_papers_per_search)
+                pubmed_task = self._safe_search("pubmed", self.pubmed.search(q, limit))
+                semantic_task = self._safe_search("semantic_scholar", self.semantic.search(q, limit))
+                openalex_task = self._safe_search("openalex", self.openalex.search(q, limit))
 
                 results = await asyncio.gather(pubmed_task, semantic_task, openalex_task)
                 for source, papers, status in results:
@@ -118,7 +121,8 @@ class ResearchPipeline:
             await self._update_progress(research_id, "ranking", partial)
 
             # Step 6: Ranking
-            ranked = rank_papers(unique, question)[: self.settings.max_papers_for_synthesis]
+            max_synthesis = min(8, self.settings.max_papers_for_synthesis) if self.settings.is_vercel else self.settings.max_papers_for_synthesis
+            ranked = rank_papers(unique, question)[:max_synthesis]
 
             # Assign stable IDs
             for i, paper in enumerate(ranked):
@@ -194,8 +198,9 @@ class ResearchPipeline:
 
 
 async def _run_in_background(settings: Settings, research_id: str, question: str) -> None:
-    from app.db.session import async_session, ResearchRepository
-    async with async_session() as session:
+    from app.db.session import ResearchRepository, get_session_factory
+    factory = get_session_factory()
+    async with factory() as session:
         repo = ResearchRepository(session)
         pipeline = ResearchPipeline(settings, repo)
         await pipeline.run(research_id, question)
@@ -204,5 +209,12 @@ async def _run_in_background(settings: Settings, research_id: str, question: str
 async def start_research(settings: Settings, repo: ResearchRepository, question: str) -> str:
     research_id = f"res_{uuid.uuid4().hex[:12]}"
     await repo.create(research_id, question)
-    asyncio.create_task(_run_in_background(settings, research_id, question))
+
+    if settings.is_vercel:
+        # Serverless: background tasks are killed after response — run inline
+        pipeline = ResearchPipeline(settings, repo)
+        await pipeline.run(research_id, question)
+    else:
+        asyncio.create_task(_run_in_background(settings, research_id, question))
+
     return research_id
