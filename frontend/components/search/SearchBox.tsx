@@ -32,8 +32,14 @@ export function SearchBox({ variant = "hero", defaultValue = "" }: SearchBoxProp
     setError("");
     setLoading(true);
     try {
-      const { research_id } = await startResearch(question.trim());
-      router.push(`/research/${research_id}`);
+      const response = await startResearch(question.trim());
+      if (response.result) {
+        sessionStorage.setItem(
+          `research_${response.research_id}`,
+          JSON.stringify(response.result)
+        );
+      }
+      router.push(`/research/${response.research_id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start research");
     } finally {

@@ -17,6 +17,7 @@ from app.schemas.search import (
     SearchRequest,
     SearchResponse,
 )
+from app.services.research.cache import cache_research, get_cached_research
 from app.services.research.pipeline import ResearchPipeline, start_research
 from app.services.retrieval.dedup import deduplicate_papers
 from app.services.retrieval.query_utils import simplify_research_query
@@ -112,9 +113,23 @@ async def create_research(
 ):
     check_rate_limit(request, settings)
     try:
+        if settings.is_vercel:
+            # Serverless: run full pipeline inline and return result (no cross-request DB)
+            import uuid
+            research_id = f"res_{uuid.uuid4().hex[:12]}"
+            await repo.create(research_id, body.question)
+            pipeline = ResearchPipeline(settings, repo)
+            result = await pipeline.run(research_id, body.question)
+            result_dict = result.model_dump()
+            cache_research(research_id, result_dict)
+            return ResearchCreateResponse(
+                research_id=research_id,
+                status=result.status,
+                result=result_dict,
+            )
+
         research_id = await start_research(settings, repo, body.question)
-        status = "completed" if settings.is_vercel else "processing"
-        return ResearchCreateResponse(research_id=research_id, status=status)
+        return ResearchCreateResponse(research_id=research_id, status="processing")
     except Exception as e:
         logger.exception("Failed to start research")
         raise HTTPException(500, f"Research failed: {e}") from e
@@ -143,6 +158,10 @@ async def list_research(repo: ResearchRepository = Depends(get_repo)):
 
 @router.get("/research/{research_id}")
 async def get_research(research_id: str, repo: ResearchRepository = Depends(get_repo)):
+    cached = get_cached_research(research_id)
+    if cached:
+        return cached
+
     record = await repo.get(research_id)
     if not record:
         raise HTTPException(404, f"Research '{research_id}' not found")

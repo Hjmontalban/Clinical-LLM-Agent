@@ -209,12 +209,5 @@ async def _run_in_background(settings: Settings, research_id: str, question: str
 async def start_research(settings: Settings, repo: ResearchRepository, question: str) -> str:
     research_id = f"res_{uuid.uuid4().hex[:12]}"
     await repo.create(research_id, question)
-
-    if settings.is_vercel:
-        # Serverless: background tasks are killed after response — run inline
-        pipeline = ResearchPipeline(settings, repo)
-        await pipeline.run(research_id, question)
-    else:
-        asyncio.create_task(_run_in_background(settings, research_id, question))
-
+    asyncio.create_task(_run_in_background(settings, research_id, question))
     return research_id

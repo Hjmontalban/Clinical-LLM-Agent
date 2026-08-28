@@ -41,7 +41,7 @@ export async function searchLiterature(
 
 export async function startResearch(
   question: string
-): Promise<{ research_id: string; status: string }> {
+): Promise<{ research_id: string; status: string; result?: ResearchResult }> {
   return fetchApi("/api/research", {
     method: "POST",
     body: JSON.stringify({ question }),

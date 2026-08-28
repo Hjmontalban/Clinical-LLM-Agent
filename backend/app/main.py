@@ -61,7 +61,6 @@ def create_app() -> FastAPI:
 
     # Mount at /api (primary) and root (fallback if platform strips prefix)
     app.include_router(router, prefix="/api")
-    app.include_router(router, prefix="")
     return app
 
 

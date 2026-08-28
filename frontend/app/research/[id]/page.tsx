@@ -24,6 +24,12 @@ export default function ResearchPage() {
 
     const run = async () => {
       try {
+        const cached = sessionStorage.getItem(`research_${id}`);
+        if (cached) {
+          setData(JSON.parse(cached) as ResearchResult);
+          return;
+        }
+
         let status = await poll();
         while (active && status && !["completed", "failed"].includes(status)) {
           await new Promise((r) => setTimeout(r, 3000));

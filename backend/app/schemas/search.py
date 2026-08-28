@@ -20,6 +20,7 @@ class ResearchCreateRequest(BaseModel):
 class ResearchCreateResponse(BaseModel):
     research_id: str
     status: str
+    result: dict | None = None
 
 
 class HealthResponse(BaseModel):
