@@ -45,27 +45,41 @@ def _extract_json(text: str) -> dict:
 class GroqProvider(LLMProvider):
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.model = settings.groq_model
+        self.models = settings.groq_model_candidates
 
     async def generate_text(self, system: str, user: str, temperature: float = 0.2) -> str:
         if not self.settings.groq_api_key:
             raise LLMProviderError("GROQ_API_KEY not configured")
-        try:
-            from groq import AsyncGroq
-            client = AsyncGroq(api_key=self.settings.groq_api_key)
-            response = await client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-                temperature=temperature,
-                max_tokens=4096,
-            )
-            return response.choices[0].message.content or ""
-        except Exception as e:
-            logger.exception("Groq API error")
-            raise LLMProviderError(f"Groq API error: {e}") from e
+        from groq import AsyncGroq
+
+        client = AsyncGroq(api_key=self.settings.groq_api_key)
+        last_error: Exception | None = None
+
+        for model in self.models:
+            try:
+                response = await client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user},
+                    ],
+                    temperature=temperature,
+                    max_tokens=4096,
+                )
+                if model != self.models[0]:
+                    logger.info("Groq request succeeded with fallback model: %s", model)
+                return response.choices[0].message.content or ""
+            except Exception as e:
+                last_error = e
+                err = str(e).lower()
+                if "404" in str(e) or "does not exist" in err or "decommissioned" in err:
+                    logger.warning("Groq model %s unavailable, trying next: %s", model, e)
+                    continue
+                logger.exception("Groq API error on model %s", model)
+                raise LLMProviderError(f"Groq API error: {e}") from e
+
+        logger.exception("All Groq models failed")
+        raise LLMProviderError(f"Groq API error: {last_error}") from last_error
 
 
 class GeminiProvider(LLMProvider):

@@ -27,3 +27,6 @@ class HealthResponse(BaseModel):
     status: str
     app: str
     version: str = "1.0.0"
+    llm_provider: str | None = None
+    groq_model: str | None = None
+    llm_configured: bool | None = None

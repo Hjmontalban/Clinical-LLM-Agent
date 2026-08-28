@@ -57,7 +57,13 @@ async def api_root():
 
 @router.get("/health", response_model=HealthResponse)
 async def health(settings: Settings = Depends(get_settings)):
-    return HealthResponse(status="ok", app=settings.app_name)
+    return HealthResponse(
+        status="ok",
+        app=settings.app_name,
+        llm_provider=settings.llm_provider,
+        groq_model=settings.resolved_groq_model,
+        llm_configured=settings.llm_configured,
+    )
 
 
 @router.post("/search", response_model=SearchResponse)

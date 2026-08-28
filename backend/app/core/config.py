@@ -7,6 +7,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 _BACKEND_DIR = Path(__file__).resolve().parents[2]
 _ENV_FILE = _BACKEND_DIR / ".env"
 
+# Groq retired these models Aug 2026 — auto-migrate if still configured
+_GROQ_MODEL_MIGRATIONS: dict[str, str] = {
+    "llama-3.3-70b-versatile": "openai/gpt-oss-120b",
+    "llama-3.1-8b-instant": "openai/gpt-oss-20b",
+    "llama-3.1-70b-versatile": "openai/gpt-oss-120b",
+}
+
+_GROQ_MODEL_FALLBACKS: tuple[str, ...] = (
+    "openai/gpt-oss-120b",
+    "qwen/qwen3.6-27b",
+    "openai/gpt-oss-20b",
+)
+
 
 def _default_database_url() -> str:
     # Vercel serverless filesystem is read-only except /tmp
@@ -53,6 +66,23 @@ class Settings(BaseSettings):
     @property
     def is_vercel(self) -> bool:
         return os.getenv("VERCEL") == "1"
+
+    @property
+    def resolved_groq_model(self) -> str:
+        return _GROQ_MODEL_MIGRATIONS.get(self.groq_model, self.groq_model)
+
+    @property
+    def groq_model_candidates(self) -> list[str]:
+        primary = self.resolved_groq_model
+        candidates = [primary]
+        for model in _GROQ_MODEL_FALLBACKS:
+            if model not in candidates:
+                candidates.append(model)
+        return candidates
+
+    @property
+    def llm_configured(self) -> bool:
+        return bool(self.groq_api_key or self.gemini_api_key)
 
     @property
     def cors_origin_list(self) -> list[str]:
