@@ -1,5 +1,0 @@
-{
-  "name": "clinical-evidence-assistant",
-  "private": true,
-  "description": "Monorepo root — Vercel deploys from here (see vercel.json). Frontend lives in frontend/, backend in backend/."
-}
