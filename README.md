@@ -111,7 +111,7 @@ Open [http://localhost:3000](http://localhost:3000)
 | `NCBI_EMAIL` | Yes | Your email for PubMed |
 | `LLM_PROVIDER` | No | Default: `groq` |
 | `CROSSREF_MAILTO` | No | Your email |
-| `CORS_ORIGINS` | No | Set to your Vercel URL, e.g. `https://your-app.vercel.app` |
+| `CORS_ORIGINS` | No | Set to your Vercel URL, e.g. `https://clinical-llm-agent-4988.vercel.app` |
 
 **Do not set** `NEXT_PUBLIC_API_URL` on Vercel — the frontend uses relative `/api` paths on the same domain.
 
@@ -122,11 +122,11 @@ Open [http://localhost:3000](http://localhost:3000)
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | Vercel white page: `NOT_FOUND` | Root Directory set to `frontend` | Set Root Directory to **empty** (repo root) so `backend/` and root `vercel.json` are included |
-| `DEPLOYMENT_NOT_FOUND` | Expired or failed deployment URL | Use your production URL (e.g. `https://clinical-llm-agent.vercel.app`) or redeploy from Vercel dashboard |
+| `DEPLOYMENT_NOT_FOUND` | Expired or failed deployment URL | Use your production URL (`https://clinical-llm-agent-4988.vercel.app`) or redeploy from Vercel dashboard |
 | `{"detail":"Not Found"}` on `/api` | Hitting `/api` without a route | Use `/api/health` instead |
 | API works but research fails | Missing/invalid `GROQ_API_KEY` | Add a valid key in Vercel env vars |
 
-**Verify deployment:** open `https://YOUR-APP.vercel.app/api/health` — you should see `{"status":"ok",...}`.
+**Verify deployment:** open `https://clinical-llm-agent-4988.vercel.app/api/health` — you should see `{"status":"ok",...}`.
 
 For production PostgreSQL, update `DATABASE_URL`:
 ```
