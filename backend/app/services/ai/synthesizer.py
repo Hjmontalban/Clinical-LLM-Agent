@@ -128,14 +128,26 @@ Use only provided paper IDs. Never invent statistics."""
             "See the Studies tab for full paper details."
         )
         if llm_error:
-            if "invalid_api_key" in llm_error.lower() or "api key" in llm_error.lower():
+            err_lower = llm_error.lower()
+            if "does not exist" in err_lower or "model" in err_lower and "404" in llm_error:
+                summary += (
+                    " AI synthesis failed: the configured Groq model is unavailable. "
+                    "Set GROQ_MODEL=openai/gpt-oss-120b in environment variables and redeploy."
+                )
+            elif "invalid_api_key" in err_lower or "api key" in err_lower:
                 summary += (
                     " AI synthesis failed: your LLM API key is invalid. "
-                    "Get a new free key at https://console.groq.com and update backend/.env, "
-                    "then restart the backend."
+                    "Get a new free key at https://console.groq.com and update GROQ_API_KEY, "
+                    "then redeploy."
                 )
             else:
                 summary += f" AI synthesis unavailable ({llm_error[:120]})."
+
+        gap_msg = "Full AI evidence synthesis was unavailable for this run."
+        if llm_error and ("api key" in llm_error.lower() or "invalid" in llm_error.lower()):
+            gap_msg = "Add a valid GROQ_API_KEY or GEMINI_API_KEY for full evidence synthesis."
+        elif llm_error and ("404" in llm_error or "does not exist" in llm_error.lower()):
+            gap_msg = "Update GROQ_MODEL to a supported model (e.g. openai/gpt-oss-120b) and redeploy."
 
         return SynthesisOutput(
             executive_summary=summary,
@@ -143,10 +155,10 @@ Use only provided paper IDs. Never invent statistics."""
             evidence_strength="Moderate" if len(papers) >= 5 else "Low",
             evidence_strength_reason=(
                 f"Based on {len(papers)} retrieved studies (paper metadata only; "
-                "AI synthesis pending valid API key)."
+                "AI synthesis pending valid LLM configuration)."
             ),
             limitations=["Automated AI synthesis unavailable — showing retrieved study summaries."],
-            research_gaps=["Add a valid GROQ_API_KEY or GEMINI_API_KEY for full evidence synthesis."],
+            research_gaps=[gap_msg],
             claims=[],
             evidence_table=table,
         )

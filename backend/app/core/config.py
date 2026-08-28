@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     openai_api_key: str = ""
 
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "openai/gpt-oss-120b"
     gemini_model: str = "gemini-2.0-flash"
 
     semantic_scholar_api_key: str = ""

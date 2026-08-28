@@ -50,7 +50,7 @@ export default function SettingsPage() {
             </div>
           </CardHeader>
           <CardContent className="text-sm text-slate-600 space-y-2">
-            <p>Default: <strong>Groq</strong> (free tier — llama-3.3-70b-versatile)</p>
+            <p>Default: <strong>Groq</strong> (free tier — openai/gpt-oss-120b)</p>
             <p>Alternative: Google Gemini 2.0 Flash (free tier)</p>
             <p className="text-xs text-slate-400 mt-2">
               Configure GROQ_API_KEY or GEMINI_API_KEY in backend environment variables.

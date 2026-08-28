@@ -108,6 +108,7 @@ Open [http://localhost:3000](http://localhost:3000)
 | Variable | Required | Notes |
 |----------|----------|-------|
 | `GROQ_API_KEY` | Yes | Free key from [console.groq.com](https://console.groq.com) |
+| `GROQ_MODEL` | No | Default: `openai/gpt-oss-120b` (Groq retired `llama-3.3-70b-versatile` Aug 2026) |
 | `NCBI_EMAIL` | Yes | Your email for PubMed |
 | `LLM_PROVIDER` | No | Default: `groq` |
 | `CROSSREF_MAILTO` | No | Your email |
