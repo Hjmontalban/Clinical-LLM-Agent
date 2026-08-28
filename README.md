@@ -99,12 +99,21 @@ Open [http://localhost:3000](http://localhost:3000)
 ## Deploy to Vercel
 
 1. Push to GitHub
-2. Import project in [Vercel](https://vercel.com)
-3. Set environment variables in Vercel dashboard:
-   - `GROQ_API_KEY`
-   - `NCBI_EMAIL`
-   - `DATABASE_URL` (use [Neon](https://neon.tech) or [Supabase](https://supabase.com) PostgreSQL)
-4. Deploy — `vercel.json` configures Next.js frontend + FastAPI backend
+2. Import [Hjmontalban/Clinical-LLM-Agent](https://github.com/Hjmontalban/Clinical-LLM-Agent) in [Vercel](https://vercel.com)
+3. Root directory: **`.`** (monorepo — `vercel.json` routes `/api/*` → FastAPI, everything else → Next.js)
+4. Set environment variables in Vercel dashboard:
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `GROQ_API_KEY` | Yes | Free key from [console.groq.com](https://console.groq.com) |
+| `NCBI_EMAIL` | Yes | Your email for PubMed |
+| `LLM_PROVIDER` | No | Default: `groq` |
+| `CROSSREF_MAILTO` | No | Your email |
+| `CORS_ORIGINS` | No | Set to your Vercel URL, e.g. `https://your-app.vercel.app` |
+
+**Do not set** `NEXT_PUBLIC_API_URL` on Vercel — the frontend uses relative `/api` paths on the same domain.
+
+5. Deploy
 
 For production PostgreSQL, update `DATABASE_URL`:
 ```
