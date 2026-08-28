@@ -100,7 +100,9 @@ Open [http://localhost:3000](http://localhost:3000)
 
 1. Push to GitHub
 2. Import [Hjmontalban/Clinical-LLM-Agent](https://github.com/Hjmontalban/Clinical-LLM-Agent) in [Vercel](https://vercel.com)
-3. Root directory: **`.`** (monorepo — `vercel.json` routes `/api/*` → FastAPI, everything else → Next.js)
+3. **Critical settings** in Vercel → Project → Settings → General:
+   - **Root Directory:** leave **empty** (repo root `.`) — do **not** set this to `frontend`
+   - **Framework Preset:** Other (or leave as detected; `vercel.json` controls routing)
 4. Set environment variables in Vercel dashboard:
 
 | Variable | Required | Notes |
@@ -114,6 +116,17 @@ Open [http://localhost:3000](http://localhost:3000)
 **Do not set** `NEXT_PUBLIC_API_URL` on Vercel — the frontend uses relative `/api` paths on the same domain.
 
 5. Deploy
+
+### Troubleshooting `NOT_FOUND` (404)
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Vercel white page: `NOT_FOUND` | Root Directory set to `frontend` | Set Root Directory to **empty** (repo root) so `backend/` and root `vercel.json` are included |
+| `DEPLOYMENT_NOT_FOUND` | Expired or failed deployment URL | Use your production URL (e.g. `https://clinical-llm-agent.vercel.app`) or redeploy from Vercel dashboard |
+| `{"detail":"Not Found"}` on `/api` | Hitting `/api` without a route | Use `/api/health` instead |
+| API works but research fails | Missing/invalid `GROQ_API_KEY` | Add a valid key in Vercel env vars |
+
+**Verify deployment:** open `https://YOUR-APP.vercel.app/api/health` — you should see `{"status":"ok",...}`.
 
 For production PostgreSQL, update `DATABASE_URL`:
 ```

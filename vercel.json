@@ -8,16 +8,12 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python"
-    },
-    {
-      "src": "api/[...path].py",
-      "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/[...path].py"
+      "dest": "/api/index.py"
     },
     {
       "handle": "filesystem"

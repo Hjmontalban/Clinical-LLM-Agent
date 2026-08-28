@@ -50,6 +50,11 @@ def check_rate_limit(request: Request, settings: Settings = Depends(get_settings
     window.append(now)
 
 
+@router.get("/")
+async def api_root():
+    return {"status": "ok", "service": "Clinical Evidence Assistant API"}
+
+
 @router.get("/health", response_model=HealthResponse)
 async def health(settings: Settings = Depends(get_settings)):
     return HealthResponse(status="ok", app=settings.app_name)
